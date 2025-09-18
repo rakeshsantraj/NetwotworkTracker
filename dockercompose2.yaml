@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+
+  db:
+    container_name: postgresdb
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: packetdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/ubuntu/packetdata/pgdata:/var/lib/postgresql/data
+    networks:
+      - packetprocessing_net
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d packetdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  packetcaptureconsumerservice:
+    container_name: packetcaptureconsumerservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureconsumerservice:${IMAGE_TAG}
+    ports:
+      - "8782:8782"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/packetdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SERVER_PORT: 8782
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - packetprocessing_net
+    restart: always
+
+  packetcaptureproducerservice:
+    container_name: packetcaptureproducerservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureproducerservice:${IMAGE_TAG}
+    ports:
+      - "8781:8781"
+    environment:
+      SERVER_PORT: 8781
+    networks:
+      - packetprocessing_net
+    restart: always
+
+  packetanalyserservice:
+    container_name: packetanalyserservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetanalyserservice:${IMAGE_TAG}
+    ports:
+      - "8783:8783"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/packetdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SERVER_PORT: 8783
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - packetprocessing_net
+    restart: always
+
+  packetcaptureservice:
+    container_name: packetcaptureservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureservice:${IMAGE_TAG}
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - packetprocessing_net
+    restart: always
+
+  frontend:
+    container_name: frontend
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}
+    ports:
+      - "3000:80"
+    depends_on:
+      - packetcaptureconsumerservice
+      - packetcaptureproducerservice
+      - packetanalyserservice
+      - packetcaptureservice
+    networks:
+      - packetprocessing_net
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  packetprocessing_net:
+    driver: bridge
