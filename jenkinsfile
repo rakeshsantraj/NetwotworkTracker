@@ -118,10 +118,10 @@ pipeline {
             }
         }
 
-        stage('Generate & Deploy Docker Compose') {
+        stage('Generate & Deploy Microservices Docker Compose') {
             steps {
                 script {
-                    def baseCompose = readFile('docker-compose.yml')
+                    def baseCompose = readFile('docker-compose.microservices.yml')
 
                     def services = [
                         'packetcaptureconsumerservice',
@@ -140,10 +140,10 @@ pipeline {
                     // Replace frontend image
                     updatedCompose = updatedCompose.replaceAll(/image:.*frontend.*/, "image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}")
 
-                    writeFile file: 'docker-compose.generated.yml', text: updatedCompose
+                    writeFile file: 'docker-compose.microservices.generated.yml', text: updatedCompose
 
-                    sh 'docker compose -f docker-compose.generated.yml down'
-                    sh 'docker compose -f docker-compose.generated.yml up -d'
+                    sh 'docker compose -f docker-compose.microservices.generated.yml down'
+                    sh 'docker compose -f docker-compose.microservices.generated.yml up -d'
                 }
             }
         }
