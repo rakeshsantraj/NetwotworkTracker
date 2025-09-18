@@ -1,0 +1,147 @@
+version: "3.9"
+
+services:
+  # -------------------------
+  # Zookeeper
+  # -------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  # -------------------------
+  # Kafka Brokers (3-node cluster)
+  # -------------------------
+  kafka1:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka2
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka3
+    depends_on:
+      - zookeeper
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+  # -------------------------
+  # PostgreSQL
+  # -------------------------
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: tiger
+      POSTGRES_DB: networkdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # -------------------------
+  # Producer Microservice
+  # -------------------------
+  packetcaptureproducerservice:
+    build: ./packetcaptureproducerservice
+    container_name: packetcaptureproducerservice
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      SERVER_PORT: 8781
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
+      KAFKA_TOPIC: packets
+    ports:
+      - "8781:8781"
+
+  # -------------------------
+  # Consumer Microservice
+  # -------------------------
+  packetcaptureconsumerservice:
+    build: ./packetcaptureconsumerservice
+    container_name: packetcaptureconsumerservice
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+      - postgres
+    environment:
+      SERVER_PORT: 8782
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
+      KAFKA_CONSUMER_GROUP: packet-consumer-group
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/networkdata
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: tiger
+    ports:
+      - "8782:8782"
+
+  # -------------------------
+  # Analyzer Microservice
+  # -------------------------
+  packetanalyserservice:
+    build: ./packetanalyserservice
+    container_name: packetanalyserservice
+    depends_on:
+      - postgres
+    environment:
+      SERVER_PORT: 8783
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/networkdata
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: tiger
+    ports:
+      - "8783:8783"
+
+  # -------------------------
+  # Python Capture Service
+  # -------------------------
+  packetcaptureservice:
+    build: ./packetcaptureservice
+    container_name: packetcaptureservice
+    depends_on:
+      - packetcaptureproducerservice
+    environment:
+      PRODUCER_URL: http://packetcaptureproducerservice:8781/produce
+    network_mode: host   # needed for scapy to capture system traffic
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+# -------------------------
+# Volumes
+# -------------------------
+volumes:
+  postgres_data:
