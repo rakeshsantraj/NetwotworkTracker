@@ -1,0 +1,157 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk17'
+        maven 'maven3'
+    }
+
+    environment {
+        AWS_REGION = 'ca-central-1'
+        ECR_ACCOUNT = '380200924758'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        Git_repo = 'https://github.com/rakeshsantraj/NetwotworkTracker.git'
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+    }
+
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git branch: 'master', changelog: false, poll: false, url: "${Git_repo}"
+            }
+        }
+
+        stage('Build Backend Services') {
+            steps {
+                script {
+                    def backendServices = [
+                        'packetcaptureconsumerservice',
+                        'packetcaptureproducerservice',
+                        'packetanalyserservice',
+                        'packetcaptureservice'  // Python service - no Maven build
+                    ]
+
+                    backendServices.each { svc ->
+                        if (svc == 'packetcaptureservice') {
+                            echo "Skipping Maven build for Python service: ${svc}"
+                        } else {
+                            dir("Backend/${svc}") {
+                                sh 'mvn clean package -DskipTests'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Create ECR Repositories') {
+            steps {
+                script {
+                    def allRepos = [
+                        'packetcaptureconsumerservice',
+                        'packetcaptureproducerservice',
+                        'packetanalyserservice',
+                        'packetcaptureservice',
+                        'frontend'
+                    ]
+                    allRepos.each { repo ->
+                        sh """
+                        aws ecr describe-repositories --repository-names ${repo} --region ${AWS_REGION} || \
+                        aws ecr create-repository --repository-name ${repo} --region ${AWS_REGION}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    def backendServices = [
+                        'packetcaptureconsumerservice',
+                        'packetcaptureproducerservice',
+                        'packetanalyserservice',
+                        'packetcaptureservice'
+                    ]
+                    backendServices.each { svc ->
+                        def image = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
+                        sh "docker build -t ${image} Backend/${svc}"
+                    }
+
+                    def frontendImage = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}"
+                    sh "docker build -t ${frontendImage} Frontend"
+                }
+            }
+        }
+
+        stage('Login to ECR') {
+            steps {
+                sh """
+                aws ecr get-login-password --region ${AWS_REGION} | \
+                docker login --username AWS --password-stdin ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                """
+            }
+        }
+
+        stage('Push Images to ECR') {
+            steps {
+                script {
+                    def services = [
+                        'packetcaptureconsumerservice',
+                        'packetcaptureproducerservice',
+                        'packetanalyserservice',
+                        'packetcaptureservice',
+                        'frontend'
+                    ]
+                    services.each { svc ->
+                        def image = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
+                        sh "docker push ${image}"
+                    }
+                }
+            }
+        }
+
+        stage('Generate & Deploy Docker Compose') {
+            steps {
+                script {
+                    def baseCompose = readFile('docker-compose.yml')
+
+                    def services = [
+                        'packetcaptureconsumerservice',
+                        'packetcaptureproducerservice',
+                        'packetanalyserservice',
+                        'packetcaptureservice'
+                    ]
+
+                    def updatedCompose = baseCompose
+                    services.each { svc ->
+                        def pattern = "image:.*${svc}.*"
+                        def newImage = "image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
+                        updatedCompose = updatedCompose.replaceAll(pattern, newImage)
+                    }
+
+                    // Replace frontend image
+                    updatedCompose = updatedCompose.replaceAll(/image:.*frontend.*/, "image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}")
+
+                    writeFile file: 'docker-compose.generated.yml', text: updatedCompose
+
+                    sh 'docker compose -f docker-compose.generated.yml down'
+                    sh 'docker compose -f docker-compose.generated.yml up -d'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
