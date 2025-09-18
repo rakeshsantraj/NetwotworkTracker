@@ -10,16 +10,16 @@ pipeline {
         AWS_REGION = 'ca-central-1'
         ECR_ACCOUNT = '380200924758'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        Git_repo = 'https://github.com/rakeshsantraj/NetwotworkTracker.git'  // Update if your repo changed
+        Git_repo = 'https://github.com/rakeshsantraj/NetwotworkTracker.git'
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
 
     stages {
         stage('Clean Workspace') {
-          steps {
-            deleteDir()
-          }
+            steps {
+                deleteDir()
+            }
         }
 
         stage('Checkout') {
@@ -35,15 +35,14 @@ pipeline {
                         'packetcaptureconsumerservice',
                         'packetcaptureproducerservice',
                         'packetanalyserservice',
-                        'packetcaptureservice'  // Python service might not need Maven build, see note below
+                        'packetcaptureservice'  // Python service - no Maven build
                     ]
 
                     backendServices.each { svc ->
                         if (svc == 'packetcaptureservice') {
-                            // If Python service, build docker image only - no Maven
                             echo "Skipping Maven build for Python service: ${svc}"
                         } else {
-                            dir("BACKEND/${svc}") {
+                            dir("Backend/${svc}") {
                                 sh 'mvn clean package -DskipTests'
                             }
                         }
@@ -79,15 +78,15 @@ pipeline {
                         'packetcaptureconsumerservice',
                         'packetcaptureproducerservice',
                         'packetanalyserservice',
-                        'packetcaptureservice'  // Python service included here
+                        'packetcaptureservice'
                     ]
                     backendServices.each { svc ->
                         def image = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
-                        sh "docker build -t ${image} ${svc.toUpperCase()}"  // Assuming folder names match service names uppercase
+                        sh "docker build -t ${image} Backend/${svc}"
                     }
 
                     def frontendImage = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}"
-                    sh "docker build -t ${frontendImage} FRONTEND"
+                    sh "docker build -t ${frontendImage} Frontend"
                 }
             }
         }
