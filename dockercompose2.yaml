@@ -14,7 +14,7 @@ services:
     volumes:
       - /home/ubuntu/packetdata/pgdata:/var/lib/postgresql/data
     networks:
-      - packetprocessing_net
+      - packet_net
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d packetdb"]
@@ -37,7 +37,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - packetprocessing_net
+      - packet_net
     restart: always
 
   packetcaptureproducerservice:
@@ -49,7 +49,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8781
     networks:
-      - packetprocessing_net
+      - packet_net
     restart: always
 
   packetanalyserservice:
@@ -67,7 +67,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - packetprocessing_net
+      - packet_net
     restart: always
 
   packetcaptureservice:
@@ -79,7 +79,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - packetprocessing_net
+      - packet_net
     restart: always
 
   frontend:
@@ -93,12 +93,12 @@ services:
       - packetanalyserservice
       - packetcaptureservice
     networks:
-      - packetprocessing_net
+      - packet_net
     restart: always
 
 volumes:
   pgdata:
 
 networks:
-  packetprocessing_net:
-    driver: bridge
+  packet_net:
+    external: true
