@@ -8,6 +8,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 RUN ls
 COPY target/packetanalyserservice-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8782
+EXPOSE 8783
 # Command to run the jar file
 CMD ["java", "-jar", "app.jar"]
