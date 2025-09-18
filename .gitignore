@@ -6,7 +6,7 @@
 Thumbs.db
 
 # ---- Java / Spring Boot ----
-target/
+
 *.class
 *.jar
 *.war
@@ -35,7 +35,6 @@ build/
 # ---- Node / React ----
 node_modules/
 dist/
-build/
 npm-debug.log
 yarn-error.log
 

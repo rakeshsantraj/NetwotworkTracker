@@ -1,0 +1,6 @@
+com\cisco\capture\packetcaptureconsumerservice\model\PacketEntity.class
+com\cisco\capture\packetcaptureconsumerservice\repository\PacketRepository.class
+com\cisco\capture\packetcaptureconsumerservice\service\PacketConsumer.class
+com\cisco\capture\packetcaptureconsumerservice\PacketcaptureconsumerserviceApplication.class
+com\cisco\capture\packetcaptureconsumerservice\dto\PacketData.class
+com\cisco\capture\packetcaptureconsumerservice\config\JacksonConfig.class
