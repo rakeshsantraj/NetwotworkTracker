@@ -2,24 +2,49 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_FILE = 'docker-compose.kafka.yml'
+        AWS_REGION = 'ca-central-1'     // adjust if needed
+        KAFKA_COMPOSE_FILE = 'docker-compose.kafka.yml'
     }
 
     stages {
-        stage('Start Kafka & Zookeeper') {
+        stage('Checkout') {
             steps {
-                sh """
-                docker compose -f ${COMPOSE_FILE} up -d
-                """
+                // Checkout your repo where docker-compose.kafka.yml lives
+                git branch: 'master', url: 'https://github.com/rakeshsantraj/NetwotworkTracker.git'
             }
         }
 
-        stage('Stop Kafka & Zookeeper') {
+        stage('Start Kafka Cluster') {
             steps {
-                sh """
-                docker compose -f ${COMPOSE_FILE} down
-                """
+                script {
+                    // Check if Kafka container is running
+                    def kafkaRunning = sh(script: "docker ps --filter 'name=kafka1' --format '{{.Names}}'", returnStdout: true).trim()
+
+                    if (!kafkaRunning) {
+                        echo "Kafka cluster not running, starting with docker-compose..."
+                        sh "docker compose -f ${KAFKA_COMPOSE_FILE} up -d"
+                    } else {
+                        echo "Kafka cluster already running, skipping start."
+                    }
+                }
             }
+        }
+
+        stage('Kafka Cluster Health Check') {
+            steps {
+                script {
+                    // Optional: Add a small wait or health check script here
+                    echo "Waiting for Kafka to stabilize..."
+                    sleep(time: 20, unit: 'SECONDS')
+                }
+            }
+        }
+    }
+
+    post {
+        // We generally don't stop Kafka in pipeline to keep state persistent.
+        always {
+            echo "Kafka pipeline finished."
         }
     }
 }
