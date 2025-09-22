@@ -150,9 +150,9 @@ services:
   # -------------------------
   # Python Packet Capture Service
   # -------------------------
-  packetcaptureservice:
-    build: ./packetcaptureservice
-    container_name: packetcaptureservice
+  networkpacketcaptureservice:
+    build: ./networkpacketcaptureservice
+    container_name: networkpacketcaptureservice
     depends_on:
       - packetcaptureproducerservice
     environment:
