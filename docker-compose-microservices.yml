@@ -70,11 +70,11 @@ services:
       - packet_net
     restart: always
 
-  packetcaptureservice:
-    container_name: packetcaptureservice
-    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureservice:${IMAGE_TAG}
+  networkpacketcaptureservice:
+    container_name: networkpacketcaptureservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/networkpacketcaptureservice:${IMAGE_TAG}
     ports:
-      - "5000:5000"
+      - "8785:8785"
     depends_on:
       db:
         condition: service_healthy
@@ -91,7 +91,7 @@ services:
       - packetcaptureconsumerservice
       - packetcaptureproducerservice
       - packetanalyserservice
-      - packetcaptureservice
+      - networkpacketcaptureservice
     networks:
       - packet_net
     restart: always
