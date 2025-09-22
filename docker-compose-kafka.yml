@@ -12,9 +12,11 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      - packet_net
 
   # -------------------------
-  # Kafka Brokers (3-node cluster)
+  # Kafka Brokers
   # -------------------------
   kafka1:
     image: confluentinc/cp-kafka:7.5.0
@@ -26,8 +28,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:19092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - packet_net
 
   kafka2:
     image: confluentinc/cp-kafka:7.5.0
@@ -39,8 +45,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:19093,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19093,PLAINTEXT_HOST://0.0.0.0:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - packet_net
 
   kafka3:
     image: confluentinc/cp-kafka:7.5.0
@@ -52,8 +62,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:19094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19094,PLAINTEXT_HOST://0.0.0.0:9094
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - packet_net
 
   # -------------------------
   # PostgreSQL
@@ -70,6 +84,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - packet_net
 
   # -------------------------
   # Producer Microservice
@@ -83,10 +99,12 @@ services:
       - kafka3
     environment:
       SERVER_PORT: 8781
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
       KAFKA_TOPIC: packets
     ports:
       - "8781:8781"
+    networks:
+      - packet_net
 
   # -------------------------
   # Consumer Microservice
@@ -101,13 +119,15 @@ services:
       - postgres
     environment:
       SERVER_PORT: 8782
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
       KAFKA_CONSUMER_GROUP: packet-consumer-group
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/networkdata
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: tiger
     ports:
       - "8782:8782"
+    networks:
+      - packet_net
 
   # -------------------------
   # Analyzer Microservice
@@ -124,9 +144,11 @@ services:
       SPRING_DATASOURCE_PASSWORD: tiger
     ports:
       - "8783:8783"
+    networks:
+      - packet_net
 
   # -------------------------
-  # Python Capture Service
+  # Python Packet Capture Service
   # -------------------------
   packetcaptureservice:
     build: ./packetcaptureservice
@@ -134,8 +156,8 @@ services:
     depends_on:
       - packetcaptureproducerservice
     environment:
-      PRODUCER_URL: http://packetcaptureproducerservice:8781/produce
-    network_mode: host   # needed for scapy to capture system traffic
+      PRODUCER_URL: http://localhost:8781/produce
+    network_mode: host  # Required for scapy to capture host traffic
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -145,3 +167,10 @@ services:
 # -------------------------
 volumes:
   postgres_data:
+
+# -------------------------
+# Networks
+# -------------------------
+networks:
+  packet_net:
+    external: true
