@@ -1,7 +1,6 @@
 version: "3.9"
 
 services:
-  # Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -13,7 +12,6 @@ services:
     networks:
       - packet_net
 
-  # Kafka Brokers
   kafka1:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka1
@@ -25,10 +23,10 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      # Fix here: advertise docker hostnames, NOT localhost
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:19092,PLAINTEXT_HOST://kafka1:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:9092,EXTERNAL://${DOCKER_HOST_IP:-localhost}:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
     networks:
       - packet_net
@@ -44,9 +42,10 @@ services:
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:19093,PLAINTEXT_HOST://kafka2:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19093,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:19093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:9093,EXTERNAL://${DOCKER_HOST_IP:-localhost}:19093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
     networks:
       - packet_net
@@ -58,18 +57,18 @@ services:
       - zookeeper
     ports:
       - "9094:9094"
-      - "19094:19094" 
+      - "19094:19094"
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:19094,PLAINTEXT_HOST://kafka3:9094
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19094,PLAINTEXT_HOST://0.0.0.0:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9094,EXTERNAL://0.0.0.0:19094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:9094,EXTERNAL://${DOCKER_HOST_IP:-localhost}:19094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
     networks:
       - packet_net
 
-  # PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: postgresdb
@@ -90,7 +89,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Microservices - using images from ECR (replace placeholders with your vars)
   packetcaptureproducerservice:
     container_name: packetcaptureproducerservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureproducerservice:${IMAGE_TAG}
@@ -99,8 +97,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8781
-      # Make sure bootstrap servers match the advertised listeners above
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
+      KAFKA_BOOTSTRAP_SERVERS: ${DOCKER_HOST_IP:-localhost}:19092,${DOCKER_HOST_IP:-localhost}:19093,${DOCKER_HOST_IP:-localhost}:19094
       KAFKA_TOPIC: packets
     depends_on:
       - kafka1
@@ -121,7 +118,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: tiger
       SERVER_PORT: 8782
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
+      KAFKA_BOOTSTRAP_SERVERS: ${DOCKER_HOST_IP:-localhost}:19092,${DOCKER_HOST_IP:-localhost}:19093,${DOCKER_HOST_IP:-localhost}:19094
       KAFKA_CONSUMER_GROUP: packet-consumer-group
     depends_on:
       postgres:
@@ -168,7 +165,6 @@ services:
       - packet_net
     restart: always
 
-  # Frontend
   frontend:
     container_name: frontend
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}
