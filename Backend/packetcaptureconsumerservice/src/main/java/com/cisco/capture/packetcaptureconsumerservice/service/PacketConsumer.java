@@ -24,7 +24,7 @@ public class PacketConsumer {
 		this.objectMapper= objectMapper;
 	}
 	
-	@KafkaListener(topics = "packets", groupId = "packet-consumer-group")
+	@KafkaListener(topics = "packets1", groupId = "packet-consumer-group")
 	public void consume(String message) throws Exception {
 		PacketData packet = objectMapper.readValue(message, PacketData.class);
 
@@ -35,7 +35,7 @@ public class PacketConsumer {
 	    entity.setLength(packet.getLength());
 	    entity.setSrcPort(packet.getSrcPort());
 	    entity.setDstPort(packet.getDstPort());
-	    entity.setPayload(packet.getPayload());
+	    //entity.setPayload(packet.getPayload());
 	    entity.setTimestamp(packet.getTimestamp()); // already LocalDateTime
 	    packetRepository.save(entity);
 

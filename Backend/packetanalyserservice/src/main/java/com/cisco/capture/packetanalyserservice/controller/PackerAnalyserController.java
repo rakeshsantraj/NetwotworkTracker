@@ -1,11 +1,18 @@
 package com.cisco.capture.packetanalyserservice.controller;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cisco.capture.packetanalyserservice.dto.PacketData;
@@ -14,6 +21,7 @@ import com.cisco.capture.packetanalyserservice.service.PacketAnalyserService;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:5173")
 public class PackerAnalyserController {
 
 	private final PacketAnalyserService packetAnalyserService;
@@ -23,8 +31,10 @@ public class PackerAnalyserController {
 	}
 	
 	@GetMapping("/packets")
-	public List<PacketData> getAllPackets() {
-        return packetAnalyserService.getAllPackets();
+	public Page<PacketData> getAllPackets(
+			@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return packetAnalyserService.getAllPackets(page, size);
     }
 
 	@GetMapping("/packetcounts")
@@ -39,4 +49,26 @@ public class PackerAnalyserController {
         LocalDateTime start = end.minusHours(24);
         return packetAnalyserService.getPacketStats5Min(start, end);
     }
+	
+	 @GetMapping("/anomalies")
+	    public List<Map<String, Object>> getAnomalies() {
+	        return packetAnalyserService.detectAnomalies();
+	    }
+
+	    // API: Export data
+	    @GetMapping("/export")
+	    public ResponseEntity<byte[]> exportData(@RequestParam(defaultValue = "json") String format) {
+	        String result = packetAnalyserService.exportData(format);
+
+	        if ("csv".equalsIgnoreCase(format)) {
+	            return ResponseEntity.ok()
+	                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=export.csv")
+	                    .contentType(MediaType.parseMediaType("text/csv"))
+	                    .body(result.getBytes(StandardCharsets.UTF_8));
+	        } else {
+	            return ResponseEntity.ok()
+	                    .contentType(MediaType.APPLICATION_JSON)
+	                    .body(result.getBytes(StandardCharsets.UTF_8));
+	        }
+	    }
 }

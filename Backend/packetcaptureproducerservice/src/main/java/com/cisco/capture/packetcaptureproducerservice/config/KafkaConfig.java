@@ -11,7 +11,7 @@ public class KafkaConfig {
 	@Bean
 	public NewTopic packetTopic() {
 		return TopicBuilder
-				.name("packets")
+				.name("packets1")
 				.partitions(3)
 				.replicas(3)
 				.build();
