@@ -189,7 +189,6 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      CAPTURE_INTERFACE: enX0
       PRODUCER_URL: http://packetcaptureproducerservice:8781/produce
     networks:
       - packet_net
