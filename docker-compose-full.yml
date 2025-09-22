@@ -20,7 +20,8 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "9092:9092"        # Host port mapped for external access/debugging
+      - "19092:19092"      # Internal broker port (optional, can remove if unused)
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -38,6 +39,7 @@ services:
       - zookeeper
     ports:
       - "9093:9093"
+      - "19093:19093"
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -55,6 +57,7 @@ services:
       - zookeeper
     ports:
       - "9094:9094"
+      - "19094:19094"
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -86,7 +89,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Microservices - using images from ECR (replace placeholders with your vars)
+  # Microservices
   packetcaptureproducerservice:
     container_name: packetcaptureproducerservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureproducerservice:${IMAGE_TAG}
