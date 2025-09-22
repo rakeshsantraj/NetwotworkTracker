@@ -1,0 +1,186 @@
+version: "3.9"
+
+services:
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - packet_net
+
+  # Kafka Brokers
+  kafka1:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:19092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - packet_net
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka2
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:19093,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19093,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - packet_net
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka3
+    depends_on:
+      - zookeeper
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:19094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19094,PLAINTEXT_HOST://0.0.0.0:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - packet_net
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgresdb
+    environment:
+      POSTGRES_DB: packetdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: tiger
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - packet_net
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d packetdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Microservices - using images from ECR (replace placeholders with your vars)
+  packetcaptureproducerservice:
+    container_name: packetcaptureproducerservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureproducerservice:${IMAGE_TAG}
+    ports:
+      - "8781:8781"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8781
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
+      KAFKA_TOPIC: packets
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    networks:
+      - packet_net
+    restart: always
+
+  packetcaptureconsumerservice:
+    container_name: packetcaptureconsumerservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureconsumerservice:${IMAGE_TAG}
+    ports:
+      - "8782:8782"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresdb:5432/packetdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: tiger
+      SERVER_PORT: 8782
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
+      KAFKA_CONSUMER_GROUP: packet-consumer-group
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka1:
+        condition: service_started
+      kafka2:
+        condition: service_started
+      kafka3:
+        condition: service_started
+    networks:
+      - packet_net
+    restart: always
+
+  packetanalyserservice:
+    container_name: packetanalyserservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetanalyserservice:${IMAGE_TAG}
+    ports:
+      - "8783:8783"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresdb:5432/packetdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: tiger
+      SERVER_PORT: 8783
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - packet_net
+    restart: always
+
+  networkpacketcaptureservice:
+    container_name: networkpacketcaptureservice
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/networkpacketcaptureservice:${IMAGE_TAG}
+    ports:
+      - "8785:8785"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PRODUCER_URL: http://packetcaptureproducerservice:8781/produce
+    networks:
+      - packet_net
+    restart: always
+
+  # Frontend
+  frontend:
+    container_name: frontend
+    image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}
+    ports:
+      - "3000:80"
+    depends_on:
+      - packetcaptureconsumerservice
+      - packetcaptureproducerservice
+      - packetanalyserservice
+      - networkpacketcaptureservice
+    networks:
+      - packet_net
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  packet_net:
+    external: true
