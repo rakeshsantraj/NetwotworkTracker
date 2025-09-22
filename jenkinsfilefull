@@ -24,7 +24,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'master', url: "${Git_repo}"
+                git branch: 'master', changelog: false, poll: false, url: "${Git_repo}"
             }
         }
 
@@ -43,15 +43,6 @@ pipeline {
                             sh 'mvn clean package -DskipTests'
                         }
                     }
-                }
-            }
-        }
-
-        stage('Build Frontend') {
-            steps {
-                dir('Frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'  // adjust based on your frontend build command
                 }
             }
         }
@@ -116,6 +107,7 @@ pipeline {
                         'networkpacketcaptureservice',
                         'frontend'
                     ]
+
                     services.each { svc ->
                         def image = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
                         sh "docker push ${image}"
@@ -127,9 +119,7 @@ pipeline {
         stage('Generate & Deploy Full Docker Compose') {
             steps {
                 script {
-                    // Read your full docker-compose file (docker-compose-full.yml)
                     def baseCompose = readFile('docker-compose-full.yml')
-
                     def services = [
                         'packetcaptureconsumerservice',
                         'packetcaptureproducerservice',
@@ -138,18 +128,19 @@ pipeline {
                         'frontend'
                     ]
 
-                    def updatedCompose = baseCompose
-                    // Replace image tags in the docker-compose file with the new IMAGE_TAG
-                    services.each { svc ->
-                        def pattern = "(image:.*${svc}.*)"
-                        def newImage = "image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
-                        updatedCompose = updatedCompose.replaceAll(pattern, newImage)
-                    }
+                    def updatedCompose = baseCompose.readLines().collect { line ->
+                        def updatedLine = line
+                        services.each { svc ->
+                            if (line =~ /image:\s.*${svc}.*$/) {
+                                def indent = line.takeWhile { it == ' ' || it == '\t' }
+                                updatedLine = "${indent}image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
+                            }
+                        }
+                        return updatedLine
+                    }.join('\n')
 
-                    // Write the updated compose file to disk
                     writeFile file: 'docker-compose-full.generated.yml', text: updatedCompose
 
-                    // Bring down any existing containers then bring up new ones in detached mode
                     sh 'docker compose -f docker-compose-full.generated.yml down'
                     sh 'docker compose -f docker-compose-full.generated.yml up -d'
                 }
