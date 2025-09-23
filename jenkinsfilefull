@@ -76,6 +76,7 @@ pipeline {
                         'packetanalyserservice',
                         'networkpacketcaptureservice'
                     ]
+
                     backendServices.each { svc ->
                         def image = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
                         sh "docker build -t ${image} Backend/${svc}"
@@ -106,6 +107,7 @@ pipeline {
                         'networkpacketcaptureservice',
                         'frontend'
                     ]
+
                     services.each { svc ->
                         def image = "${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
                         sh "docker push ${image}"
@@ -114,32 +116,33 @@ pipeline {
             }
         }
 
-        stage('Generate & Deploy Microservices Docker Compose') {
+        stage('Generate & Deploy Full Docker Compose') {
             steps {
                 script {
-                    def baseCompose = readFile('docker-compose-microservices.yml')
-
+                    def baseCompose = readFile('docker-compose-full.yml')
                     def services = [
                         'packetcaptureconsumerservice',
                         'packetcaptureproducerservice',
                         'packetanalyserservice',
-                        'networkpacketcaptureservice'
+                        'networkpacketcaptureservice',
+                        'frontend'
                     ]
 
-                    def updatedCompose = baseCompose
-                    services.each { svc ->
-                        def pattern = "image:.*${svc}.*"
-                        def newImage = "image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
-                        updatedCompose = updatedCompose.replaceAll(pattern, newImage)
-                    }
+                    def updatedCompose = baseCompose.readLines().collect { line ->
+                        def updatedLine = line
+                        services.each { svc ->
+                            if (line =~ /image:\s.*${svc}.*$/) {
+                                def indent = line.takeWhile { it == ' ' || it == '\t' }
+                                updatedLine = "${indent}image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${svc}:${IMAGE_TAG}"
+                            }
+                        }
+                        return updatedLine
+                    }.join('\n')
 
-                    // Replace frontend image
-                    updatedCompose = updatedCompose.replaceAll(/image:.*frontend.*/, "image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}")
+                    writeFile file: 'docker-compose-full.generated.yml', text: updatedCompose
 
-                    writeFile file: 'docker-compose.microservices.generated.yml', text: updatedCompose
-
-                    sh 'docker compose -f docker-compose.microservices.generated.yml down'
-                    sh 'docker compose -f docker-compose.microservices.generated.yml up -d'
+                    sh 'docker compose -f docker-compose-full.generated.yml down'
+                    sh 'docker compose -f docker-compose-full.generated.yml up -d'
                 }
             }
         }
