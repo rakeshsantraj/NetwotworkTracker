@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.cisco.capture.packetanalyserservice.Repository.PacketAnalyserRepository;
@@ -148,5 +149,38 @@ public class PacketAnalyserService {
             }
             return list.toString();
         }
+    }
+    
+    public List<PacketEntity> search(
+            String srcIp,
+            String dstIp,
+            String protocol,
+            Integer srcPort,
+            Integer dstPort,
+            LocalDateTime start,
+            LocalDateTime end) {
+
+        Specification<PacketEntity> spec = Specification.where(null);
+
+        if (srcIp != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("srcIp"), srcIp));
+        }
+        if (dstIp != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("dstIp"), dstIp));
+        }
+        if (protocol != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("protocol"), protocol));
+        }
+        if (srcPort != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("srcPort"), srcPort));
+        }
+        if (dstPort != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("dstPort"), dstPort));
+        }
+        if (start != null && end != null) {
+            spec = spec.and((root, query, cb) -> cb.between(root.get("timestamp"), start, end));
+        }
+
+        return packetAnalyserRepository.findAll(spec);
     }
 }

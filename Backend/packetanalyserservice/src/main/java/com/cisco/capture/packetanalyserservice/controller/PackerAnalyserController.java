@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cisco.capture.packetanalyserservice.dto.PacketData;
 import com.cisco.capture.packetanalyserservice.dto.PacketStatsDTO;
+import com.cisco.capture.packetanalyserservice.model.PacketEntity;
 import com.cisco.capture.packetanalyserservice.service.PacketAnalyserService;
 
 @RestController
@@ -70,5 +72,20 @@ public class PackerAnalyserController {
 	                    .contentType(MediaType.APPLICATION_JSON)
 	                    .body(result.getBytes(StandardCharsets.UTF_8));
 	        }
+	    }
+	    
+	    @GetMapping("/search")
+	    public List<PacketEntity> searchPackets(
+	            @RequestParam(required = false) String srcIp,
+	            @RequestParam(required = false) String dstIp,
+	            @RequestParam(required = false) String protocol,
+	            @RequestParam(required = false) Integer srcPort,
+	            @RequestParam(required = false) Integer dstPort,
+	            @RequestParam(required = false)
+	            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
+	            @RequestParam(required = false)
+	            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
+
+	        return packetAnalyserService.search(srcIp, dstIp, protocol, srcPort, dstPort, start, end);
 	    }
 }
