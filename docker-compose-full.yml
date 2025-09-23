@@ -192,7 +192,7 @@ services:
     environment:
       PRODUCER_URL: http://packetcaptureproducerservice:8781/produce
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
     # networks:
     #   - packet_net
