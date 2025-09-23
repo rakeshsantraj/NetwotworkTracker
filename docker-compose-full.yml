@@ -123,7 +123,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8781
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
       KAFKA_TOPIC: packets1
     depends_on:
       - kafka1
@@ -144,7 +144,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: tiger
       SERVER_PORT: 8782
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19093,kafka3:19094
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
       KAFKA_CONSUMER_GROUP: packet-consumer-group
     depends_on:
       postgres:
