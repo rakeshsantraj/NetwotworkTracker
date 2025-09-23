@@ -4,7 +4,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 # Install PostgreSQL client
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client && \
+    apt-get install -y --no-install-recommends postgresql-client iputils-ping curl netcat libpcap-dev && \
     rm -rf /var/lib/apt/lists/*
 RUN ls
 COPY target/packetcaptureconsumerservice-0.0.1-SNAPSHOT.jar app.jar
