@@ -73,13 +73,17 @@ services:
   networkpacketcaptureservice:
     container_name: networkpacketcaptureservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/networkpacketcaptureservice:${IMAGE_TAG}
-    ports:
-      - "8785:8785"
+    network_mode: "host"
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    # ports:
+    #   - "8785:8785"
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - packet_net
+    # networks:
+    #   - packet_net
     restart: always
 
   frontend:
