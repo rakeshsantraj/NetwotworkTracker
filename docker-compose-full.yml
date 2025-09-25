@@ -183,19 +183,19 @@ services:
   networkpacketcaptureservice:
     container_name: networkpacketcaptureservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/networkpacketcaptureservice:${IMAGE_TAG}
-    network_mode: "host"
+    # network_mode: "host"
     cap_add:
       - NET_RAW
       - NET_ADMIN
-    # ports:
-    #   - "8785:8785"
+    ports:
+      - "8785:8785"
     environment:
       PRODUCER_URL: http://packetcaptureproducerservice:8781/produce
     depends_on:
       postgres:
         condition: service_healthy
-    # networks:
-    #   - packet_net
+    networks:
+      - packet_net
     restart: always
 
 
