@@ -2,16 +2,16 @@ version: "3.9"
 
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: bitnami/zookeeper:latest
     container_name: zookeeper
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+      ZOO_PORT_NUMBER: 2181
     ports:
       - "2181:2181"
     volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-logs:/var/lib/zookeeper/log
+      - zookeeper-data:/bitnami/zookeeper
+
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "2181"]
       interval: 10s
@@ -21,7 +21,7 @@ services:
       - packet_net
 
   kafka1:
-    image: confluentinc/cp-kafka:7.5.0
+    image: bitnami/kafka:latest
     container_name: kafka1
     depends_on:
       zookeeper:
@@ -33,13 +33,14 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
-      - kafka1-data:/var/lib/kafka/data
+      - kafka1-data:/bitnami/kafka
     healthcheck:
-      test: ["CMD", "bash", "-c", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,7 +48,7 @@ services:
       - packet_net
 
   kafka2:
-    image: confluentinc/cp-kafka:7.5.0
+    image: bitnami/kafka:latest
     container_name: kafka2
     depends_on:
       zookeeper:
@@ -59,13 +60,14 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
-      - kafka2-data:/var/lib/kafka/data
+      - kafka2-data:/bitnami/kafka
     healthcheck:
-      test: ["CMD", "bash", "-c", "kafka-broker-api-versions --bootstrap-server localhost:9093 || exit 1"]
+      test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9093 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,7 +75,7 @@ services:
       - packet_net
 
   kafka3:
-    image: confluentinc/cp-kafka:7.5.0
+    image: bitnami/kafka:latest
     container_name: kafka3
     depends_on:
       zookeeper:
@@ -85,13 +87,14 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
       - kafka3-data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD", "bash", "-c", "kafka-broker-api-versions --bootstrap-server localhost:9094 || exit 1"]
+      test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9094 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
