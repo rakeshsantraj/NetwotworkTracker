@@ -92,7 +92,7 @@ services:
       # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
-      - kafka3-data:/var/lib/kafka/data
+      - kafka3-data:/bitnami/kafka
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9094 || exit 1"]
       interval: 10s
