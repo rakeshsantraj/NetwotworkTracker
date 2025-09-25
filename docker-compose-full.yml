@@ -30,20 +30,24 @@ services:
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       ALLOW_PLAINTEXT_LISTENER: "yes"
+      # KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+      # KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
       - kafka1-data:/bitnami/kafka
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 10
     networks:
       - packet_net
 
@@ -57,20 +61,24 @@ services:
       - "9093:9093"
     environment:
       KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
-      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ALLOW_PLAINTEXT_LISTENER: "yes"   
+      # KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
+      # KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2     
       # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
       - kafka2-data:/bitnami/kafka
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9093 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 10
     networks:
       - packet_net
 
@@ -84,11 +92,16 @@ services:
       - "9094:9094"
     environment:
       KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
+      # KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      # ALLOW_PLAINTEXT_LISTENER: "yes"
       # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     volumes:
@@ -117,9 +130,9 @@ services:
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d packetdb"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 10
 
   packetcaptureproducerservice:
     container_name: packetcaptureproducerservice
