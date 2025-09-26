@@ -5,14 +5,14 @@ import { saveAs } from "file-saver";
 const StatsPanel = ({ packets = [], counts = {} }) => {
   const total = packets.length;
   const avgSize = total
-    ? (packets.reduce((a, b) => a + b.length, 0) / total).toFixed(0)
+    ? (packets?.content?.reduce((a, b) => a + b.length, 0) / total).toFixed(0)
     : 0;
 
   // Export CSV
   const exportCSV = () => {
     const rows = [
       ["ID", "Timestamp", "Protocol", "SrcIP", "DestIP", "SrcPort", "DestPort", "Length"],
-      ...packets.map((p) => [
+      ...packets?.content?.map((p) => [
         p.id,
         new Date(p.timestamp).toLocaleString(),
         p.protocol,
@@ -66,7 +66,7 @@ const StatsPanel = ({ packets = [], counts = {} }) => {
         <p>Export captured packets in CSV / JSON / PDF</p>
         <div className="export-btns">
           <button className="btn blue" onClick={exportCSV}>Export CSV</button>
-          <button className="btn teal" onClick={() => shareJSON(packets)}>Export JSON</button>
+          <button className="btn teal" onClick={() => shareJSON(packets?.content)}>Export JSON</button>
           <button className="btn purple" onClick={() => exportPDFFromNode("packetTable")}>Export PDF</button>
         </div>
       </div>

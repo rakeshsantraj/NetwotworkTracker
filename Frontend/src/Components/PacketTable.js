@@ -9,7 +9,7 @@ const PacketTable = ({ packets = [] }) => {
 
   // Normalize API response
 const normalizePackets = (packets) =>
-  packets.map((p, index) => {
+  packets.content.map((p, index) => {
     return {
       id: index + 1, // Assuming no `id` field in the response, using index as fallback
       timestamp: p.timestamp,

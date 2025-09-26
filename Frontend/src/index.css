@@ -79,6 +79,7 @@ body {
 .protocol-card.dns { background: #8b5cf6; }
 .protocol-card.icmp { background: #10b981; }
 .protocol-card.arp { background: #6366f1; }
+.protocol-card.other { background: #f163c9; }
 
 /* Badges */
 .badge { padding: 3px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; color: #fff; }
@@ -90,6 +91,7 @@ body {
 .badge.ipv6 { background: #ef4444; }
 .badge.icmp { background: #10b981; }
 .badge.arp { background: #6366f1; }
+.badge.other { background: #f163c9; }
 
 .table-container {
   overflow-x: auto;

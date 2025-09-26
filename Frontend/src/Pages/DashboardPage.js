@@ -90,13 +90,13 @@ const handleClearAll = () => {
         </div>
         <div className="header-right">
           <div className="stat-box">
-            PACKETS CAPTURED <b>{packets.length}</b>
+            PACKETS CAPTURED <b>{packets?.content?.length}</b>
           </div>
           <div className={`stat-box ${isCapturing ? "green" : "yellow"}`}>
             {isCapturing ? "CAPTURING" : "READY TO CAPTURE"}
           </div>
           <div className="stat-box">
-            CAPTURE PROGRESS {packets.length} packets stored
+            CAPTURE PROGRESS {packets?.content?.length} packets stored
           </div>
         </div>
       </header>
@@ -114,7 +114,7 @@ const handleClearAll = () => {
             ⏹ Stop Capture
           </button>
           <button className="btn orange" onClick={handleClearAll}>
-            🗑 Clear All ({packets.length})
+            🗑 Clear All ({packets?.content?.length})
           </button>
         </div>
         <div className="status-row">
@@ -125,10 +125,10 @@ const handleClearAll = () => {
             Capture Status: <b>{isCapturing ? `Active (Interface: ${iface})` : "Inactive"}</b>
           </span>
           <span>
-            Packets Captured: <b>{packets.length} / 500</b>
+            Packets Captured: <b>{packets?.content?.length} / 500</b>
           </span>
           <span>
-            Live Count: <b>{packets.length}</b>
+            Live Count: <b>{packets?.content?.length}</b>
           </span>
         </div>
       </section>
