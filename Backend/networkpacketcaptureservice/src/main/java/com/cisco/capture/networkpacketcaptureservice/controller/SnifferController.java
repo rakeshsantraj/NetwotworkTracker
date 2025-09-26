@@ -3,6 +3,7 @@ package com.cisco.capture.networkpacketcaptureservice.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,22 +26,44 @@ public class SnifferController {
 
     @PostMapping("/start")
     public ResponseEntity<Map<String, Object>> start() {
-        snifferService.start();
-        return ResponseEntity.ok(Map.of(
-                "status", "started",
-                "running", snifferService.isRunning(),
-                "captured", snifferService.getCapturedCount()
-        ));
+    	try {
+    		snifferService.start();
+            return ResponseEntity.ok(Map.of(
+                    "status", "started",
+                    "running", snifferService.isRunning(),
+                    "captured", snifferService.getCapturedCount()
+            ));
+    	}catch (Exception e) {
+    		 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                     .body(Map.of(
+                             "status", "error",
+                             "message", e.getMessage(),
+                             "running", snifferService.isRunning(),
+                             "captured", snifferService.getCapturedCount()
+                     ));
+		}
+        
     }
 
     @PostMapping("/stop")
     public ResponseEntity<Map<String, Object>> stop() {
-        snifferService.stop();
-        return ResponseEntity.ok(Map.of(
-                "status", "stopped",
-                "running", snifferService.isRunning(),
-                "captured", snifferService.getCapturedCount()
-        ));
+    	try {
+    		snifferService.stop();
+            return ResponseEntity.ok(Map.of(
+                    "status", "stopped",
+                    "running", snifferService.isRunning(),
+                    "captured", snifferService.getCapturedCount()
+            ));
+    	} catch (Exception e) {
+    		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "status", "error",
+                            "message", e.getMessage(),
+                            "running", snifferService.isRunning(),
+                            "captured", snifferService.getCapturedCount()
+                    ));
+    	}
+        
     }
 
     @GetMapping("/status")
