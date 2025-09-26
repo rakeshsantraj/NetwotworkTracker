@@ -28,6 +28,7 @@ import org.pcap4j.packet.UdpPacket;
 import org.pcap4j.packet.namednumber.IpNumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.cisco.capture.networkpacketcaptureservice.config.AppProperties;
@@ -176,6 +177,7 @@ public class SnifferService {
     }
 
     // ===== Worker =====
+    @Async("snifferExecutor")
     private void startWorkerThread() {
         Thread worker = new Thread(() -> {
             while (running) {
