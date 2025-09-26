@@ -15,7 +15,7 @@ import com.cisco.capture.networkpacketcaptureservice.service.SnifferService;
 
 @RestController
 @RequestMapping("/api/v1/sniffer")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class SnifferController {
 
     private final SnifferService snifferService;

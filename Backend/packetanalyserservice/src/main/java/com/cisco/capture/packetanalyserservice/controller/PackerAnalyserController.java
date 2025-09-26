@@ -23,7 +23,7 @@ import com.cisco.capture.packetanalyserservice.service.PacketAnalyserService;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class PackerAnalyserController {
 
 	private final PacketAnalyserService packetAnalyserService;
