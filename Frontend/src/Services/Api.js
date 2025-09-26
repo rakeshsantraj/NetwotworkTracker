@@ -61,7 +61,7 @@ export const stopSniffing = async () => {
 
 export const fetchStatus = async () => {
   try {
-    const res = await axios.get(`${BASE_URL}/api/v1/sniffer/status`);
+    const res = await axios.get(`${BASE_URL1}/api/v1/sniffer/status`);
     return res.data;
   } catch (err) {
     console.warn("Using mock status:", err.message);
