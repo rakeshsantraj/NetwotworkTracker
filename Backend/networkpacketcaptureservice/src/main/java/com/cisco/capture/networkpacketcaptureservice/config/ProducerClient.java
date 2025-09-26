@@ -1,8 +1,11 @@
 package com.cisco.capture.networkpacketcaptureservice.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.cisco.capture.networkpacketcaptureservice.dto.PacketData;
 
@@ -26,5 +29,18 @@ public class ProducerClient {
                 .retrieve()
                 .bodyToMono(Void.class)
                 .onErrorResume(e -> Mono.empty()); // swallow and continue
+    }
+    
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("*")
+                        .allowedMethods("*")
+                        .allowedHeaders("*");
+            }
+        };
     }
 }
