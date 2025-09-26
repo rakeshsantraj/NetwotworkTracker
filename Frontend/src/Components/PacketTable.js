@@ -1,17 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { saveAs } from "file-saver";
+import { fetchPacketsperPage } from "../Services/Api";
 
-const PacketTable = ({ packets = [] }) => {
+const PacketTable = ({ packets: initialPackets }) => {
+  const [packets, setPackets] = useState(initialPackets);
   const [protocol, setProtocol] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
-  // Normalize API response
-const normalizePackets = (packets) =>
-  packets.content.map((p, index) => {
-    return {
-      id: index + 1, // Assuming no `id` field in the response, using index as fallback
+  useEffect(() => {
+    if (page === 0) {
+      setPackets(initialPackets); // Use dashboard packets for page 0
+    } else {
+      const loadPage = async () => {
+        const data = await fetchPacketsperPage(page, pageSize);
+        setPackets(data);
+      };
+      loadPage();
+    }
+  }, [page, initialPackets]);
+
+  const normalizePackets = (packets) =>
+    packets?.content?.map((p, index) => ({
+      id: index + 1 + page * pageSize,
       timestamp: p.timestamp,
       protocol: p.protocol,
       srcIP: p.srcIp,
@@ -20,13 +32,10 @@ const normalizePackets = (packets) =>
       destPort: p.dstPort?.toString() || "",
       length: p.length?.toString() || "",
       anomaly: p.anomaly || false,
-    };
-  });
-
+    })) || [];
 
   const normalizedPackets = normalizePackets(packets);
 
-  // Filtering
   const filtered = normalizedPackets
     .filter((p) => (protocol ? p.protocol === protocol : true))
     .filter((p) => {
@@ -39,11 +48,6 @@ const normalizePackets = (packets) =>
       );
     });
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageData = filtered.slice(page * pageSize, page * pageSize + pageSize);
-
-  // Export CSV
   const exportCSV = () => {
     const rows = [
       ["ID", "Timestamp", "Protocol", "SrcIP", "DestIP", "SrcPort", "DestPort", "Length"],
@@ -65,7 +69,6 @@ const normalizePackets = (packets) =>
   return (
     <div>
       <h3 className="section-title">Packet Browser</h3>
-
       <div className="card packet-card">
         <div className="table-top">
           <div className="table-filters">
@@ -106,7 +109,7 @@ const normalizePackets = (packets) =>
               </tr>
             </thead>
             <tbody>
-              {pageData.map((p) => (
+              {filtered.map((p) => (
                 <tr key={p.id} className={p.anomaly ? "anomaly-row" : ""}>
                   <td>{p.id}</td>
                   <td>{new Date(p.timestamp).toLocaleString()}</td>
@@ -126,8 +129,8 @@ const normalizePackets = (packets) =>
           <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
             Prev
           </button>
-          <span>Page {page + 1} of {totalPages}</span>
-          <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+          <span>Page {page + 1}</span>
+          <button onClick={() => setPage((p) => p + 1)}>
             Next
           </button>
         </div>

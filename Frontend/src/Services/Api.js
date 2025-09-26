@@ -18,6 +18,18 @@ export const fetchPackets = async () => {
   }
 };
 
+export const fetchPacketsperPage = async (page = 0, size = 10) => {
+  try {
+    const res = await axios.get(`${BASE_URL}/api/packets`, {
+      params: { page, size },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn("Using mock packets:", err.message);
+    return delay(MOCK_PACKETS);
+  }
+};
+
 export const fetchProtocolCounts = async () => {
   try {
     const res = await axios.get(`${BASE_URL}/api/packetcounts`);
