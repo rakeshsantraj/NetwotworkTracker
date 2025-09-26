@@ -35,7 +35,7 @@ public class PackerAnalyserController {
 	@GetMapping("/packets")
 	public Page<PacketData> getAllPackets(
 			@RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "10") int size) {
         return packetAnalyserService.getAllPackets(page, size);
     }
 
