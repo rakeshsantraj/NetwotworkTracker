@@ -1,9 +1,6 @@
 version: "3.9"
 
 services:
-  # -------------------
-  # Zookeeper
-  # -------------------
   zookeeper:
     image: bitnami/zookeeper:latest
     container_name: zookeeper
@@ -14,6 +11,7 @@ services:
       - "2181:2181"
     volumes:
       - zookeeper-data:/bitnami/zookeeper
+
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "2181"]
       interval: 10s
@@ -22,9 +20,6 @@ services:
     networks:
       - packet_net
 
-  # -------------------
-  # Kafka Broker 1
-  # -------------------
   kafka1:
     image: bitnami/kafka:3.5.1
     container_name: kafka1
@@ -38,21 +33,18 @@ services:
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       ALLOW_PLAINTEXT_LISTENER: "yes"
     volumes:
       - kafka1-data:/bitnami/kafka
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "kafka1:9092"]
+      test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - packet_net
 
-  # -------------------
-  # Kafka Broker 2
-  # -------------------
   kafka2:
     image: bitnami/kafka:3.5.1
     container_name: kafka2
@@ -66,21 +58,18 @@ services:
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9093
       KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      ALLOW_PLAINTEXT_LISTENER: "yes"   
     volumes:
       - kafka2-data:/bitnami/kafka
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "kafka2:9093"]
+      test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9093 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - packet_net
 
-  # -------------------
-  # Kafka Broker 3
-  # -------------------
   kafka3:
     image: bitnami/kafka:3.5.1
     container_name: kafka3
@@ -91,24 +80,21 @@ services:
       - "9094:9094"
     environment:
       KAFKA_BROKER_ID: 3
+      ALLOW_PLAINTEXT_LISTENER: "yes"
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9094
       KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
       - kafka3-data:/bitnami/kafka
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "kafka3:9094"]
+      test: ["CMD", "kafka-broker-api-versions.sh --bootstrap-server localhost:9094 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - packet_net
 
-  # -------------------
-  # PostgreSQL
-  # -------------------
   postgres:
     image: postgres:15-alpine
     container_name: postgresdb
@@ -124,14 +110,11 @@ services:
       - packet_net
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d packetdb -h localhost"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d packetdb"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # -------------------
-  # Packet Capture Producer Service
-  # -------------------
   packetcaptureproducerservice:
     container_name: packetcaptureproducerservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureproducerservice:${IMAGE_TAG}
@@ -143,19 +126,13 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
       KAFKA_TOPIC: packets1
     depends_on:
-      kafka1:
-        condition: service_healthy
-      kafka2:
-        condition: service_healthy
-      kafka3:
-        condition: service_healthy
+      - kafka1
+      - kafka2
+      - kafka3
     networks:
       - packet_net
     restart: always
 
-  # -------------------
-  # Packet Capture Consumer Service
-  # -------------------
   packetcaptureconsumerservice:
     container_name: packetcaptureconsumerservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetcaptureconsumerservice:${IMAGE_TAG}
@@ -173,18 +150,15 @@ services:
       postgres:
         condition: service_healthy
       kafka1:
-        condition: service_healthy
+        condition: service_started
       kafka2:
-        condition: service_healthy
+        condition: service_started
       kafka3:
-        condition: service_healthy
+        condition: service_started
     networks:
       - packet_net
     restart: always
 
-  # -------------------
-  # Packet Analyzer Service
-  # -------------------
   packetanalyserservice:
     container_name: packetanalyserservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/packetanalyserservice:${IMAGE_TAG}
@@ -203,12 +177,10 @@ services:
       - packet_net
     restart: always
 
-  # -------------------
-  # Network Packet Capture Service
-  # -------------------
   networkpacketcaptureservice:
     container_name: networkpacketcaptureservice
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/networkpacketcaptureservice:${IMAGE_TAG}
+    # network_mode: "host"
     cap_add:
       - NET_RAW
       - NET_ADMIN
@@ -223,9 +195,7 @@ services:
       - packet_net
     restart: always
 
-  # -------------------
-  # Frontend
-  # -------------------
+
   frontend:
     container_name: frontend
     image: ${ECR_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/frontend:${IMAGE_TAG}
@@ -240,19 +210,14 @@ services:
       - packet_net
     restart: always
 
-# -------------------
-# Volumes
-# -------------------
 volumes:
   pgdata:
   kafka1-data:
   kafka2-data:
   kafka3-data:
   zookeeper-data:
+  zookeeper-logs:
 
-# -------------------
-# Networks
-# -------------------
 networks:
   packet_net:
     external: true
