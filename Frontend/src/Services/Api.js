@@ -2,6 +2,7 @@ import axios from "axios";
 import { MOCK_PACKETS, MOCK_COUNTS, MOCK_TRAFFIC, MOCK_STATUS } from "./mockData";
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://15.223.211.204:8783';
+const BASE_URL1 = process.env.REACT_APP_BASE_URL1 || 'http://15.223.211.204:8785';
 // const BASE_URL = "http://localhost:5000";
 
 const delay = (data, ms = 300) =>
@@ -39,7 +40,7 @@ export const fetchTraffic = async () => {
 
 export const startSniffing = async () => {
   try {
-    const res = await axios.post(`${BASE_URL}/api/v1/sniffer/start`);
+    const res = await axios.post(`${BASE_URL1}/api/v1/sniffer/start`);
     return res.data;
   } catch (err) {
     console.error("Failed to start sniffing:", err.message);
@@ -49,7 +50,7 @@ export const startSniffing = async () => {
 
 export const stopSniffing = async () => {
   try {
-    const res = await axios.post(`${BASE_URL}/api/v1/sniffer/stop`);
+    const res = await axios.post(`${BASE_URL1}/api/v1/sniffer/stop`);
     return res.data;
   } catch (err) {
     console.error("Failed to stop sniffing:", err.message);
