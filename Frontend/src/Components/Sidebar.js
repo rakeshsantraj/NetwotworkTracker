@@ -11,18 +11,18 @@ const Sidebar = () => (
     <nav>
       <ul>
         <li>
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-active" : ""}>
-            <span className="nav-icon">📊</span> Dashboard
+          <NavLink to="/overview" className={({ isActive }) => isActive ? "nav-active" : ""}>
+            <span className="nav-icon">📊</span> Overview
           </NavLink>
         </li>
         <li>
-          <NavLink to="/charts" className={({ isActive }) => isActive ? "nav-active" : ""}>
-            <span className="nav-icon">📈</span> Charts
+          <NavLink to="/analytics" className={({ isActive }) => isActive ? "nav-active" : ""}>
+            <span className="nav-icon">📈</span> Analytics
           </NavLink>
         </li>
         <li>
-          <NavLink to="/packets" className={({ isActive }) => isActive ? "nav-active" : ""}>
-            <span className="nav-icon">📑</span> Packets
+          <NavLink to="/Packetlogs" className={({ isActive }) => isActive ? "nav-active" : ""}>
+            <span className="nav-icon">📑</span> Packet Logs
           </NavLink>
         </li>
      

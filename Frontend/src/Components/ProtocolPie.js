@@ -1,14 +1,15 @@
 import React from "react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-const COLORS = ["#3182ce", "#48bb78", "#ecc94b", "#ed8936"];
+const COLORS = ["#3b82f6", "#22c55e", "#f97316", "#ef4444", "#8b5cf6", "#10b981", "#6366f1"];
 
 const ProtocolPie = ({ counts }) => {
   const data = counts
-    ? Object.entries(counts).map(([name, value]) => ({ name, value }))
+    ? Object.entries(counts).map(([name, value]) => ({
+        name,
+        value,
+      }))
     : [];
-
-  const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
     <div className="card">
@@ -20,10 +21,7 @@ const ProtocolPie = ({ counts }) => {
             dataKey="value"
             nameKey="name"
             outerRadius={110}
-            label={({ name, value }) => {
-              const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-              return `${value} (${percent}%)`;
-            }}
+            label={false}
             labelLine={false}
           >
             {data.map((_, i) => (
