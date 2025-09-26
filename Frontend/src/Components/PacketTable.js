@@ -100,8 +100,8 @@ const normalizePackets = (packets) =>
                 <th>Protocol</th>
                 <th>Src IP</th>
                 <th>Dest IP</th>
-                {/* <th>Src Port</th>
-                <th>Dest Port</th> */}
+                <th>Src Port</th>
+                <th>Dest Port</th>
                 <th>Length</th>
               </tr>
             </thead>
@@ -113,9 +113,9 @@ const normalizePackets = (packets) =>
                   <td><span className={`badge ${p.protocol.toLowerCase()}`}>{p.protocol}</span></td>
                   <td>{p.srcIP}</td>
                   <td>{p.destIP}</td>
-                  {/* <td>{p.srcPort}</td>
-                  <td>{p.destPort}</td> */}
-                  <td>{'-'}</td>
+                  <td>{p.srcPort}</td>
+                  <td>{p.destPort}</td>
+                  <td>{p.length}</td>
                 </tr>
               ))}
             </tbody>
