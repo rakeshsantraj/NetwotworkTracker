@@ -48,14 +48,15 @@ public class SnifferService {
     // Track all active handles for cleanup
     private final List<PcapHandle> handles = new ArrayList<>();
     private final List<PacketData> captured = new CopyOnWriteArrayList<>();
-
+    private ExecutorService snifferExecutor;
     // Use cached pool so each interface can run its own thread
-    private final ExecutorService snifferExecutor = Executors.newCachedThreadPool(r -> {
+    private ExecutorService createExecutor() {
+    	return Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "pcap-sniffer-thread");
         t.setDaemon(true);
         return t;
     });
-
+    }
     private final BlockingQueue<PacketData> queue = new LinkedBlockingQueue<>(10000);
     private volatile boolean running = false;
     private final Object lifecycleLock = new Object();
@@ -76,6 +77,10 @@ public class SnifferService {
                 logger.info("SnifferService already running");
                 return;
             }
+         // Recreate thread pool if it was shut down
+            if (snifferExecutor == null || snifferExecutor.isShutdown() || snifferExecutor.isTerminated()) {
+                snifferExecutor = createExecutor();
+            }
             running = true;
             startSnifferThreads();
             startWorkerThread();
@@ -94,6 +99,9 @@ public class SnifferService {
                 return;
             }
             running = false;
+            if (snifferExecutor != null && !snifferExecutor.isShutdown()) {
+                snifferExecutor.shutdownNow();
+            }
 
             // close all handles
             synchronized (handles) {
