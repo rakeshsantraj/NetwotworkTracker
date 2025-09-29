@@ -227,21 +227,34 @@ public class SnifferService {
             d.setDstIp(ip.getHeader().getDstAddr().getHostAddress());
 
             IpNumber proto = ip.getHeader().getProtocol();
+            
             if (proto.equals(IpNumber.TCP) && pkt.contains(TcpPacket.class)) {
                 TcpPacket tcp = pkt.get(TcpPacket.class);
                 layers.add("TCP");
+                int dstPort = tcp.getHeader().getDstPort().valueAsInt();
+                int srcPort = tcp.getHeader().getSrcPort().valueAsInt();
                 d.setSrcPort(tcp.getHeader().getSrcPort().valueAsInt());
                 d.setDstPort(tcp.getHeader().getDstPort().valueAsInt());
                 d.setProtocol("TCP");
+                if (dstPort == 80 || srcPort == 80) {
+                    d.setProtocol("HTTP");
+                } else if (dstPort == 443 || srcPort == 443) {
+                    d.setProtocol("HTTPS");
+                }
                 /*if (tcp.getPayload() != null) {
                     d.setPayload(extractPayloadHex(tcp.getPayload()));
                 }*/
             } else if (proto.equals(IpNumber.UDP) && pkt.contains(UdpPacket.class)) {
                 UdpPacket udp = pkt.get(UdpPacket.class);
+                int dstPort = udp.getHeader().getDstPort().valueAsInt();
+                int srcPort = udp.getHeader().getSrcPort().valueAsInt();
                 layers.add("UDP");
                 d.setSrcPort(udp.getHeader().getSrcPort().valueAsInt());
                 d.setDstPort(udp.getHeader().getDstPort().valueAsInt());
                 d.setProtocol("UDP");
+                if (dstPort == 53 || srcPort == 53) {
+                    d.setProtocol("DNS");
+                }
                 /*if (udp.getPayload() != null) {
                     d.setPayload(extractPayloadHex(udp.getPayload()));
                 }*/
