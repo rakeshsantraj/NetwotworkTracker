@@ -1,8 +1,8 @@
 import axios from "axios";
 import { MOCK_PACKETS, MOCK_COUNTS, MOCK_TRAFFIC, MOCK_STATUS } from "./mockData";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://15.223.211.204:8783';
-const BASE_URL1 = process.env.REACT_APP_BASE_URL1 || 'http://15.223.211.204:8785';
+const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://15.222.5.91:8783';
+const BASE_URL1 = process.env.REACT_APP_BASE_URL1 || 'http://15.222.5.91:8785';
 // const BASE_URL = "http://localhost:5000";
 
 const delay = (data, ms = 300) =>
