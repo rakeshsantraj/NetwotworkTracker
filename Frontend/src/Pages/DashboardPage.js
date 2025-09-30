@@ -89,15 +89,15 @@ const handleClearAll = () => {
           <p>Network Traffic Monitor</p>
         </div>
         <div className="header-right">
-          <div className="stat-box">
+          {/* <div className="stat-box">
             PACKETS CAPTURED <b>{packets?.content?.length}</b>
-          </div>
+          </div> */}
           <div className={`stat-box ${isCapturing ? "green" : "yellow"}`}>
             {isCapturing ? "CAPTURING" : "READY TO CAPTURE"}
           </div>
-          <div className="stat-box">
+          {/* <div className="stat-box">
             CAPTURE PROGRESS {packets?.content?.length} packets stored
-          </div>
+          </div> */}
         </div>
       </header>
 
